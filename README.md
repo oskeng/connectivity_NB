@@ -1,6 +1,8 @@
 # connectivity_NB
-Structural connectivity in Norrbotten county
+Python script for preparing input to Circuitscape for simulation structural connectivity in Norrbotten county, Sweden
 
-Author: Oskar Englund
+Runs from within GRASS GIS. 
+
+Author: Oskar Englund (oskeng)
 
 Email: oskar.englund@miun.se
