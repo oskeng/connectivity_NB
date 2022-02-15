@@ -1,5 +1,5 @@
 # connectivity_NB
-Python script for preparing input to Circuitscape for simulation structural connectivity in Norrbotten county, Sweden
+Python script for preparing input to Circuitscape for simulation of structural connectivity in Norrbotten county, Sweden
 
 Runs from within GRASS GIS. 
 
