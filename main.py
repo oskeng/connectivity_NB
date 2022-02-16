@@ -24,33 +24,33 @@ from subprocess import PIPE
 from grass.script import parser, parse_key_val
 
 #####################################################
-# OBS: Study area set in GUI
+# Note: Study area set in GUI
 #
-region = ''
-buffer = 0
+region = 'NB'
+buffer = 10000
 size_value_cores = "5"
 #####################################################
 
 # imported
-study_area_raw = 'in_study_area_raw'
-nmd_gen_sv = 'in_nmd_gen_sv'
-value_cores = 'in_value_cores'
-height_bush_sv = 'in_height_bush_sv'
-height_tree_sv = 'in_height_tree_sv'
-cover_bush_sv = 'in_cover_bush_sv'
-cover_tree_sv = 'in_cover_tree_sv'
+study_area_raw = 'input_study_area_raw'
+nmd_gen_sv = 'input_nmd_gen_sv'
+value_cores = 'input_value_cores'
+height_bush_sv = 'input_height_bush_sv'
+height_tree_sv = 'input_height_tree_sv'
+cover_bush_sv = 'input_cover_bush_sv'
+cover_tree_sv = 'input_cover_tree_sv'
 
 # created as model input
-study_area = 'in2_study_area_' + region  # Study area with specified buffer
-nmd_gen = 'in2_nmd_gen_'+region
-nmd_gen_20m = 'in2_nmd_gen_20m_'+region
+study_area = 'calc_study_area_' + region  # Study area with specified buffer
+nmd_gen = 'calc_nmd_gen_' + region
+nmd_gen_20m = 'calc_nmd_gen_20m_' + region
 
-value_cores_study_area = 'in2_value_cores_study_area_'+region
+value_cores_study_area = 'calc_value_cores_study_area_' + region
 
-height_bush = 'in2_height_bush_'+region
-height_tree = 'in2_height_tree_'+region
-cover_bush = 'in2_cover_bush_'+region
-cover_tree = 'in2_cover_tree_'+region
+height_bush = 'calc_height_bush_' + region
+height_tree = 'calc_height_tree_' + region
+cover_bush = 'calc_cover_bush_' + region
+cover_tree = 'calc_cover_tree_' + region
 
 raster_list = [height_tree, height_bush, cover_tree, cover_bush]
 forest_true = raster_list[2] + "> 0"
@@ -72,25 +72,25 @@ for raster in str_resistance_raster:
 for raster in corr_str_resistance_raster:
     final_str_resistance_raster.append(raster + "_final")
 
-structural_res = 'structural_resistance_'+region
+structural_res = 'structural_resistance_' + region
 structural_res_corrected = structural_res + "_corr"
 structural_res_final = structural_res + "_final"
-human_influence_res = 'human_influence_'+region
-resistance = 'resistance_'+region
+human_influence_res = 'human_influence_' + region
+resistance = 'resistance_' + region
 # lists
 
 
 # created as Circuitscape input
-out_value_cores_selected = 'out_value_cores_selected_'+region
-out_value_cores_selected_ras = 'out_value_cores_selected_ras_'+region
-out_value_cores_selected_ras_20m = 'out_value_cores_selected_ras_20m_'+region
+out_value_cores_selected = 'out_value_cores_selected_' + region
+out_value_cores_selected_ras = 'out_value_cores_selected_ras_' + region
+out_value_cores_selected_ras_20m = 'out_value_cores_selected_ras_20m_' + region
 
 # export paths
 
-export_gpkg_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/GIS/"+region+"/grassout.gpkg"
-export_raster_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/GIS/"+region+"/grassout_ras/"
-export_circuitscape_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/Circutiscape/input/"+region+"/"
-export_csv_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/Calculations/output/"+region+"/"
+export_gpkg_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/GIS/" + region + "/grassout.gpkg"
+export_raster_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/GIS/" + region + "/grassout_ras/"
+export_circuitscape_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/Circutiscape/input/" + region + "/"
+export_csv_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/Calculations/output/" + region + "/"
 
 
 # def main():
@@ -113,22 +113,25 @@ def get_time():
     now = datetime.now()
     return now.strftime("%H:%M:%S")
 
-def majorMessage(message):
 
+def majorMessage(message):
     print(Fore.BLUE + "\n######################################################\n")
     print(message)
     print("\n######################################################\n" + Fore.RESET)
+
 
 def minorMessage(message):
     print(Fore.BLUE + "\n#######################\n")
     print(message)
     print("\n#######################\n" + Fore.RESET)
 
+
 def miniMessage(message):
     # gscript.core.info("\n\n---> " + message + "\n\n")
     print(Fore.BLUE + "\n")
     print(message)
     print(Fore.RESET)
+
 
 ################################################
 #
@@ -140,7 +143,6 @@ def miniMessage(message):
 # Only needs to be run once for each region
 
 def datasets():
-
     ###
     majorMessage("PREPARING DATASETS...")
     ###
@@ -148,7 +150,7 @@ def datasets():
     global study_area_raw
     global study_area
 
-    study_area_raw = 'in_study_area_raw_' + region
+    study_area_raw = 'input_study_area_raw_' + region
 
     Module("g.region", vector=study_area_raw, res=10, align=nmd_gen_sv)
 
@@ -160,51 +162,54 @@ def datasets():
         study_area = study_area_raw
     else:
         Module("v.buffer",
-        input = study_area_raw,
-        output = study_area,
-        type = "area",
-        distance = buffer,
-        overwrite=True)
-
+               input=study_area_raw,
+               output=study_area,
+               type="area",
+               distance=buffer,
+               overwrite=True)
 
     ###
     minorMessage("...clipping rasters to study area...")
     ###
 
-    Module("g.region", vector=study_area, res=10, align=nmd_gen_sv)
+    Module("g.region", vector=study_area, res=10, align=nmd_gen_sv, zoom=nmd_gen_sv)
 
     Module("r.mask", vector=study_area)
 
     Module("r.mapcalc",
            expression=nmd_gen + " = " + nmd_gen_sv, overwrite=True)
 
-    # Setting null to zero and clipping to study area
+    # Set null outside Sweden
+    Module("r.null",
+           map=nmd_gen,
+           setnull=0)
+
+    # Vegetation height/cover data: setting null to zero and clipping to study area
+
+    Module("g.region", raster=nmd_gen)
 
     zero_to_null_in = [height_tree_sv, height_bush_sv, cover_tree_sv, cover_bush_sv]
     zero_to_null_out = [height_tree, height_bush, cover_tree, cover_bush]
     i = 0
 
     for raster in zero_to_null_in:
-
         out_raster = zero_to_null_out[i]
 
         Module("r.mapcalc",
-           expression = out_raster + "= if(isnull(" + raster + "),0," + raster + ")", overwrite=True)
+               expression=out_raster + "= if(" + nmd_gen + ",if(isnull(" + raster + "),0," + raster + "))", overwrite=True)
 
         Module("r.mapcalc",
-           expression = out_raster + " = " + out_raster, overwrite=True)
+               expression=out_raster + " = " + out_raster, overwrite=True)
 
         i += 1
 
-
     # Creating 20 m land use data for study area
 
-    Module("g.region", vector=study_area, res=20, align=nmd_gen)
+    Module("g.region", raster=nmd_gen, res=20)
 
-    Module("r.resample", input = nmd_gen, output = nmd_gen_20m, overwrite=True)
+    Module("r.resample", input=nmd_gen, output=nmd_gen_20m, overwrite=True)
 
     Module("r.mask", flags="r")
-
 
     ###
     # minorMessage("...clipping rasters to buffer...")
@@ -268,8 +273,8 @@ def datasets():
     majorMessage("...DATASETS PREPARED")
     ###
 
-def focal_points():
 
+def focal_points():
     majorMessage("CREATING FOCAL POINTS...")
 
     create_focal_points()
@@ -286,10 +291,10 @@ def create_focal_points():
     minorMessage("...extracting core_areas...")
 
     Module("v.extract",
-        input=value_cores_study_area,
-        where="AREA_HA >="+size_value_cores,
-        output=out_value_cores_selected,
-        overwrite=True)
+           input=value_cores_study_area,
+           where="AREA_HA >=" + size_value_cores,
+           output=out_value_cores_selected,
+           overwrite=True)
 
     # Det finns ev. flera areor med samma cat, varav dubletterna har area noll. Detta resulterar isf i multipla centroider inom samma area. Inte aktuellt i detta fallet men kanske behövs i andra områden
     #
@@ -304,50 +309,49 @@ def create_focal_points():
     minorMessage("...calculating LU statistics for selected value cores...")
 
     Module("v.rast.stats",
-        map = out_value_cores_selected,
-        raster = nmd_gen,
-        column_prefix = "LU",
-        method = "median",
-        flags="c")
+           map=out_value_cores_selected,
+           raster=nmd_gen,
+           column_prefix="LU",
+           method="median",
+           flags="c")
 
     minorMessage("...exporting statistics...")
 
-
     gscript.run_command("v.db.select",
-        map=out_value_cores_selected,
-        file=export_csv_path+"value_cores.csv",
-        columns="SKYDDSTYP as skyddstyp, sum(AREA_HA) as sum_area, count(cat) as count, LU_median as LC",
-        group="LU_median,SKYDDSTYP",
-        overwrite=True)
+                        map=out_value_cores_selected,
+                        file=export_csv_path + "value_cores.csv",
+                        columns="SKYDDSTYP as skyddstyp, sum(AREA_HA) as sum_area, count(cat) as count, LU_median as LC",
+                        group="LU_median,SKYDDSTYP",
+                        overwrite=True)
 
     minorMessage("...saving selected value cores to gpkg...")
 
-    gscript.run_command("v.out.ogr", input=out_value_cores_selected, output=export_gpkg_path, format="GPKG", output_layer=out_value_cores_selected, flags='u', overwrite=True)
+    gscript.run_command("v.out.ogr", input=out_value_cores_selected, output=export_gpkg_path, format="GPKG",
+                        output_layer=out_value_cores_selected, flags='u', overwrite=True)
 
 
 def create_focal_points_rasters():
-
     Module("g.region", raster=nmd_gen)
 
     minorMessage("...creating focal point rasters...")
 
     Module("v.to.rast",
-        input=out_value_cores_selected,
-        type='centroid',
-        output=out_value_cores_selected_ras,
-        use='cat',
-        memory='100000',
-        overwrite=True)
+           input=out_value_cores_selected,
+           type='centroid',
+           output=out_value_cores_selected_ras,
+           use='cat',
+           memory='100000',
+           overwrite=True)
 
     Module("g.region", raster=nmd_gen_20m)
 
     Module("v.to.rast",
-        input=out_value_cores_selected,
-        type='centroid',
-        output=out_value_cores_selected_ras_20m,
-        use='cat',
-        memory='100000',
-        overwrite=True)
+           input=out_value_cores_selected,
+           type='centroid',
+           output=out_value_cores_selected_ras_20m,
+           use='cat',
+           memory='100000',
+           overwrite=True)
 
     Module("g.region", raster=nmd_gen)
 
@@ -360,33 +364,32 @@ def create_focal_points_rasters():
 
     Module("g.region", raster=nmd_gen)
 
-def save_focal_points():
 
+def save_focal_points():
     minorMessage("...saving focal points to Circuitscape format...")
 
     Module("r.out.gdal",
-        input=out_value_cores_selected_ras,
-        output="/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/Circuitscape/input/focal_points.asc",
-        format="AAIGrid",
-        type="Int32",
-        createopt="FORCE_CELLSIZE=YES",
-        nodata="-9999",
-        flags='mf',
-        overwrite=True)
+           input=out_value_cores_selected_ras,
+           output="/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/Circuitscape/input/focal_points.asc",
+           format="AAIGrid",
+           type="Int32",
+           createopt="FORCE_CELLSIZE=YES",
+           nodata="-9999",
+           flags='mf',
+           overwrite=True)
 
     Module("r.out.gdal",
-        input=out_value_cores_selected_ras_20m,
-        output="/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/Circuitscape/input/focal_points_20m.asc",
-        format="AAIGrid",
-        type="Int32",
-        createopt="FORCE_CELLSIZE=YES",
-        nodata="-9999",
-        flags='mf',
-        overwrite=True)
+           input=out_value_cores_selected_ras_20m,
+           output="/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/Circuitscape/input/focal_points_20m.asc",
+           format="AAIGrid",
+           type="Int32",
+           createopt="FORCE_CELLSIZE=YES",
+           nodata="-9999",
+           flags='mf',
+           overwrite=True)
 
 
 def calc_resistance():
-
     majorMessage("CREATING RESISTANCE LAYER...")
 
     structural_resistance()
@@ -397,26 +400,25 @@ def calc_resistance():
 
 
 def structural_resistance():
-
-#    Module("r.mask", flags="r")
+    #    Module("r.mask", flags="r")
 
     Module("g.region", raster=nmd_gen)
 
-#
+    #
     minorMessage(" ...calculating structural resistance based on tree/bush height/cover...")
 
-#
+    #
     miniMessage("Create empty rasters...")
 
-    Module("r.mapcalc", expression=structural_res + " = if( "+ nmd_gen + ", 0)", overwrite=True, quiet=True)
+    Module("r.mapcalc", expression=structural_res + " = if( " + nmd_gen + ", 0)", overwrite=True, quiet=True)
 
     basic_str_res()
 
-    Module("r.mapcalc", expression=structural_res_corrected + " = if( "+ nmd_gen + ", 0)", overwrite=True, quiet=True)
+    Module("r.mapcalc", expression=structural_res_corrected + " = if( " + nmd_gen + ", 0)", overwrite=True, quiet=True)
 
     adjust_str_res()
 
-#
+    #
     miniMessage("Stats for structural resistance values")
 
     for dictionary in dict_list:
@@ -424,7 +426,6 @@ def structural_resistance():
 
 
 def basic_str_res():
-
     # Loop input rasters and calculate mean + stddev within selected value cores.
     # Then calculate resistance based on deviations from mean +- stddev
     # And update resistance raster
@@ -460,7 +461,8 @@ def basic_str_res():
         max_res_low = low_limit
 
         dictionary = {"raster": parameter_ras, "max value": str(maximum), "min value": str(minimum),
-                      "lower threshold for ZRR": str(low_limit), "upper threshold for ZRR": str(high_limit), "max resistance below ZRR": str(max_res_low),
+                      "lower threshold for ZRR": str(low_limit), "upper threshold for ZRR": str(high_limit),
+                      "max resistance below ZRR": str(max_res_low),
                       "max resistance above ZRR": str(max_res_high)}
 
         dict_list.append(dictionary)
@@ -469,14 +471,14 @@ def basic_str_res():
 
         # Calculate basic resistance
 
-        calc_str_res(parameter_ras,basic_res_ras,str(low_limit), str(high_limit),str(low_limit), str(high_limit))
+        calc_str_res(parameter_ras, basic_res_ras, str(low_limit), str(high_limit), str(low_limit), str(high_limit))
 
         # Update resistance raster
         update_str_res_ras(basic_res_ras, structural_res)
 
-def adjust_str_res():
 
-#
+def adjust_str_res():
+    #
     miniMessage("Applying adjustments to structural resistance...")  # See methods
 
     # Tree height parameters. n = 0
@@ -516,12 +518,15 @@ def adjust_str_res():
 
     max_forest_cover_res = dict_list[2]["max resistance below ZRR"]
 
-    weight_list = [tree_height_weight,bush_height_weight,tree_cover_weight,bush_cover_weight]
-    weight_list_nonforest = [tree_height_weight_nonforest, bush_height_weight_nonforest, tree_cover_weight_nonforest, bush_cover_weight_nonforest]
+    weight_list = [tree_height_weight, bush_height_weight, tree_cover_weight, bush_cover_weight]
+    weight_list_nonforest = [tree_height_weight_nonforest, bush_height_weight_nonforest, tree_cover_weight_nonforest,
+                             bush_cover_weight_nonforest]
     ZRR_low_list = [tree_height_ZRR_low, bush_height_ZRR_low, tree_cover_ZRR_low, bush_cover_ZRR_low]
     ZRR_high_list = [tree_height_ZRR_high, bush_height_ZRR_high, tree_cover_ZRR_high, bush_cover_ZRR_high]
-    ZRR_low_nonforest_list = [tree_height_ZRR_low_nonforest, bush_height_ZRR_low_nonforest, tree_cover_ZRR_low_nonforest, bush_cover_ZRR_low_nonforest]
-    ZRR_high_nonforest_list = [tree_height_ZRR_high_nonforest, bush_height_ZRR_high_nonforest, tree_cover_ZRR_high_nonforest, bush_cover_ZRR_high_nonforest]
+    ZRR_low_nonforest_list = [tree_height_ZRR_low_nonforest, bush_height_ZRR_low_nonforest,
+                              tree_cover_ZRR_low_nonforest, bush_cover_ZRR_low_nonforest]
+    ZRR_high_nonforest_list = [tree_height_ZRR_high_nonforest, bush_height_ZRR_high_nonforest,
+                               tree_cover_ZRR_high_nonforest, bush_cover_ZRR_high_nonforest]
 
     print(ZRR_low_list)
     print(ZRR_high_list)
@@ -529,7 +534,6 @@ def adjust_str_res():
     print(ZRR_high_nonforest_list)
 
     for n in range(0, len(raster_list)):
-
         parameter_raster = raster_list[n]
         basic_res_ras = str_resistance_raster[n]
         corr_res_ras = corr_str_resistance_raster[n]
@@ -555,7 +559,8 @@ def adjust_str_res():
 
         # Adjust resistance
 
-        calc_str_res(parameter_raster, corr_res_ras, ZRR_low_list[n], ZRR_high_list[n], ZRR_low_nonforest_list[n], ZRR_high_nonforest_list[n])
+        calc_str_res(parameter_raster, corr_res_ras, ZRR_low_list[n], ZRR_high_list[n], ZRR_low_nonforest_list[n],
+                     ZRR_high_nonforest_list[n])
 
         # Calculate stats on corrected resistance
 
@@ -577,7 +582,8 @@ def adjust_str_res():
 
         # Downscale
 
-        rescale_str_res(corr_res_ras, weight_list[n], weight_list_nonforest[n], max_forest_cover_res, str(maximum_res),final_res_ras)
+        rescale_str_res(corr_res_ras, weight_list[n], weight_list_nonforest[n], max_forest_cover_res, str(maximum_res),
+                        final_res_ras)
 
         # Calculate stats on corrected and rescaled resistance
 
@@ -600,65 +606,60 @@ def adjust_str_res():
         update_str_res_ras(corr_res_ras, structural_res_corrected)
         update_str_res_ras(final_res_ras, structural_res_final)
 
-#
+    #
     miniMessage("saving structural resistance raster...")
 
-    Module("r.out.gdal", input=structural_res, output=export_raster_path + structural_res + ".tif", type="Float64", overwrite=True, quiet=True)
+    Module("r.out.gdal", input=structural_res, output=export_raster_path + structural_res + ".tif", type="Float64",
+           overwrite=True, quiet=True)
 
-#
+    #
     minorMessage("...structural resistance calculated")
 
 
-def calc_str_res(parameter_ras,res_ras, low_limit, high_limit, low_limit_nonforest, high_limit_nonforest):
-
-#
+def calc_str_res(parameter_ras, res_ras, low_limit, high_limit, low_limit_nonforest, high_limit_nonforest):
+    #
     miniMessage("Calculating " + parameter_ras + "...")
 
     Module("r.mapcalc", expression=res_ras + "= if( " + forest_true + "," +
-        "if (" + parameter_ras + " < " + low_limit + ", " + low_limit + " - " + parameter_ras + ", if (" + parameter_ras + " > " + high_limit + ", " + parameter_ras + "-" + high_limit + ",0))," +
-        "if (" + parameter_ras + " < " + low_limit_nonforest + ", " + low_limit_nonforest + " - " + parameter_ras + ", if (" + parameter_ras + " > " + high_limit_nonforest + ", " + parameter_ras + "-" + high_limit_nonforest + ",0)))",
-        overwrite=True)
+                                   "if (" + parameter_ras + " < " + low_limit + ", " + low_limit + " - " + parameter_ras + ", if (" + parameter_ras + " > " + high_limit + ", " + parameter_ras + "-" + high_limit + ",0))," +
+                                   "if (" + parameter_ras + " < " + low_limit_nonforest + ", " + low_limit_nonforest + " - " + parameter_ras + ", if (" + parameter_ras + " > " + high_limit_nonforest + ", " + parameter_ras + "-" + high_limit_nonforest + ",0)))",
+           overwrite=True)
 
-    Module("r.mapcalc",   # setting minus to zero
-        expression=res_ras + "= if(" + res_ras + "< 0, 0," + res_ras + ")",
-        overwrite=True, quiet=True)
+    Module("r.mapcalc",  # setting minus to zero
+           expression=res_ras + "= if(" + res_ras + "< 0, 0," + res_ras + ")",
+           overwrite=True, quiet=True)
 
 
 def rescale_str_res(ras_to_rescale, weight, weight_nonforest, max_fc_res, max_parameter_res, output):
-
     if raster == corr_str_resistance_raster[3]:
-
         print(weight + weight_nonforest + max_fc_res + max_parameter_res)
 
-    Module("r.mapcalc", expression= output + "= if( " + forest_true + "," +
-            ras_to_rescale + "*" + max_fc_res + "*" + weight + "/" + max_parameter_res + "," +
-            ras_to_rescale + "*" + max_fc_res + "*" + weight_nonforest + "/" + max_parameter_res + ")",
-            overwrite=True)
+    Module("r.mapcalc", expression=output + "= if( " + forest_true + "," +
+                                   ras_to_rescale + "*" + max_fc_res + "*" + weight + "/" + max_parameter_res + "," +
+                                   ras_to_rescale + "*" + max_fc_res + "*" + weight_nonforest + "/" + max_parameter_res + ")",
+           overwrite=True)
 
 
 def update_str_res_ras(res_ras, output):
-
     miniMessage("Updating structural resistance raster")
 
     Module("r.mapcalc", expression=output + "=" + structural_res + "+" + res_ras,
            overwrite=True, quiet=True)
 
 
-
 def human_influence():
-
     minorMessage(" ...calculating human influence...")
 
     # Create empty raster
 
-    Module("r.mapcalc", expression=human_influence_res+" = if(" + nmd_gen + ", 0)", overwrite=True)
+    Module("r.mapcalc", expression=human_influence_res + " = if(" + nmd_gen + ", 0)", overwrite=True)
 
-    Module("r.out.gdal", input=human_influence_res, output=export_raster_path + human_influence_res + ".tif", type="Float64",
+    Module("r.out.gdal", input=human_influence_res, output=export_raster_path + human_influence_res + ".tif",
+           type="Float64",
            overwrite=True, quiet=True)
 
 
 def combine_resistance():
-
     minorMessage(" ...combining resistances...")
 
     Module("r.mapcalc", expression=resistance + "=" + structural_res + "+" + human_influence_res,
@@ -667,19 +668,16 @@ def combine_resistance():
     Module("r.out.gdal", input=resistance, output=export_raster_path + resistance + ".tif", type="Float64",
            overwrite=True, quiet=True)
 
-def generate_init():
 
+def generate_init():
     Module("g.region", raster=nmd_gen)
     gscript.core.info("\n ---> Nope, not yet...\n \n")
     return
 
 
 def init_circuitscape():
-
     Module("g.region", raster=nmd_gen)
     gscript.core.info("\n ---> Nope, not yet...\n \n")
-
-
 
 
 ##################################################################
@@ -720,23 +718,24 @@ CheckVar12 = IntVar()
 notcompleted = "Not completed"
 running = "Running..."
 completed = "--------> Completed: "
-input_region_label = Label(a, text="Input region here: NB or test\n")
+input_region_label = Label(a, text="Input region here: NB or test. (Default: NB)\n")
 region_status_label = Label(a, text="Current region: " + region)
-input_buffer_label = Label(a, text="\nSpecify buffer size in meter\n")
+input_buffer_label = Label(a, text="\nSpecify buffer size in meter (Default: 10,000)\n")
 buffer_status_label = Label(a, text="Current buffer: " + str(buffer) + " m")
-Title_label = Label(a, text="\n\nSelect operation",font=("Courier", 20))
-Study_area_label = Label(a, text="\n_______________________________\nDefine study area\n",font=("Courier", 12))
-Preparation_label = Label(a, text="\n_______________________________\nPrepare data\n",font=("Courier", 12))
-Compute_label = Label(a, text="\n_______________________________\nGenerate Circuitscape input\n",font=("Courier", 12))
-Circuitscape_label = Label(a, text="\n_______________________________\nCircuitscape\n",font=("Courier", 12))
-System_label = Label(a, text="\n_______________________________\nSystem\n",font=("Courier", 12))
+Title_label = Label(a, text="\n\nSelect operation", font=("Courier", 20))
+Study_area_label = Label(a, text="\n_______________________________\nDefine study area\n", font=("Courier", 12))
+Preparation_label = Label(a, text="\n_______________________________\nPrepare data\n", font=("Courier", 12))
+Compute_label = Label(a, text="\n_______________________________\nGenerate Circuitscape input\n", font=("Courier", 12))
+Circuitscape_label = Label(a, text="\n_______________________________\nCircuitscape\n", font=("Courier", 12))
+System_label = Label(a, text="\n_______________________________\nSystem\n", font=("Courier", 12))
 prepare_datasets_label = Label(a, text=notcompleted)
 generate_focal_points_label = Label(a, text=notcompleted)
 compute_resistance_label = Label(a, text=notcompleted)
 generate_init_file_label = Label(a, text=notcompleted)
 init_circuitscape_label = Label(a, text=notcompleted)
 
-#label.config(font=("Courier", 44))
+
+# label.config(font=("Courier", 44))
 
 ###############
 #
@@ -762,15 +761,17 @@ init_circuitscape_label = Label(a, text=notcompleted)
 #         label.update_idletasks()
 def retrieve_region():
     global region
-    region = textbox_region.get("1.0",'end-1c')
-    region_status_label.config(text="Current region: "+region + " (" + get_time() + ")")
+    region = textbox_region.get("1.0", 'end-1c')
+    region_status_label.config(text="Current region: " + region + " (" + get_time() + ")")
     region_status_label.update_idletasks()
+
 
 def retrieve_buffer():
     global buffer
-    buffer = textbox_buffer.get("1.0",'end-1c')
-    buffer_status_label.config(text="Current buffer: "+str(buffer) + " m (" + get_time() + ")")
+    buffer = textbox_buffer.get("1.0", 'end-1c')
+    buffer_status_label.config(text="Current buffer: " + str(buffer) + " m (" + get_time() + ")")
     buffer_status_label.update_idletasks()
+
 
 def prepare_datasets():
     prepare_datasets_label.config(text=running)
@@ -780,6 +781,7 @@ def prepare_datasets():
 
     prepare_datasets_label.config(text=completed + get_time())
     prepare_datasets_label.update_idletasks()
+
 
 def generate_focal_points():
     generate_focal_points_label.config(text=running)
@@ -846,37 +848,36 @@ def initiate_circuitscape():
 #     L8.update_idletasks()
 
 def reset_fields():
-    labels = [prepare_datasets_label, generate_focal_points_label, compute_resistance_label, generate_init_file_label, init_circuitscape_label]
+    labels = [prepare_datasets_label, generate_focal_points_label, compute_resistance_label, generate_init_file_label,
+              init_circuitscape_label]
 
     for label in labels:
         label.config(text="Not completed")
         label.update_idletasks()
 
-textbox_region=Text(a, height=1, width=10)
-textbox_buffer=Text(a, height=1, width=10)
 
-
+textbox_region = Text(a, height=1, width=10)
+textbox_buffer = Text(a, height=1, width=10)
 
 # command=lambda: retrieve_input() >>> just means do this when i press the button
 
 save_region_button = Button(a, text="Save", activebackground="black",
-                                          activeforeground="WHITE", \
-                                          bg="green", height=1, width=10, command=lambda: retrieve_region())
+                            activeforeground="WHITE", \
+                            bg="green", height=1, width=10, command=lambda: retrieve_region())
 
 save_buffer_button = Button(a, text="Save", activebackground="black",
-                                          activeforeground="WHITE", \
-                                          bg="green", height=1, width=10, command=lambda: retrieve_buffer())
-
+                            activeforeground="WHITE", \
+                            bg="green", height=1, width=10, command=lambda: retrieve_buffer())
 
 prepare_datasets_button = Checkbutton(a, text="Prepare datasets", activebackground="black",
-                                          activeforeground="WHITE", \
-                                          bg="green", width=35, bd=10, variable=CheckVar1, onvalue=1, offvalue=0, \
-                                          command=prepare_datasets)
+                                      activeforeground="WHITE", \
+                                      bg="green", width=35, bd=10, variable=CheckVar1, onvalue=1, offvalue=0, \
+                                      command=prepare_datasets)
 
 generate_focal_points_button = Checkbutton(a, text="Generate focal points", activebackground="black",
-                                          activeforeground="WHITE", \
-                                          bg="green", width=35, bd=10, variable=CheckVar2, onvalue=1, offvalue=0, \
-                                          command=generate_focal_points)
+                                           activeforeground="WHITE", \
+                                           bg="green", width=35, bd=10, variable=CheckVar2, onvalue=1, offvalue=0, \
+                                           command=generate_focal_points)
 
 compute_resistance_button = Checkbutton(a, text="Compute resistance layer", activebackground="black",
                                         activeforeground="WHITE", \
@@ -971,9 +972,6 @@ init_circuitscape_label.grid(row=17, column=1)
 System_label.grid(row=18, column=0)
 reset_button.grid(row=19, column=0)
 quit_button.grid(row=20, column=0)
-
-
-
 
 a.mainloop()
 
