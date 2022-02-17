@@ -22,6 +22,7 @@ import time
 from datetime import datetime
 from subprocess import PIPE
 from grass.script import parser, parse_key_val
+import pandas as pd
 
 #####################################################
 # Note: Study area set in GUI
@@ -45,12 +46,15 @@ study_area = 'calc_study_area_' + region  # Study area with specified buffer
 nmd_gen = 'calc_nmd_gen_' + region
 nmd_gen_20m = 'calc_nmd_gen_20m_' + region
 
-value_cores_study_area = 'calc_value_cores_study_area_' + region
+value_cores_study_area = 'calc_value_cores_' + region
 
 height_bush = 'calc_height_bush_' + region
 height_tree = 'calc_height_tree_' + region
 cover_bush = 'calc_cover_bush_' + region
 cover_tree = 'calc_cover_tree_' + region
+
+focal_points_ras = "calc_focal_points_ras"
+focal_points_vect = "calc_focal_points"
 
 raster_list = [height_tree, height_bush, cover_tree, cover_bush]
 forest_true = raster_list[2] + "> 0"
@@ -87,10 +91,10 @@ out_value_cores_selected_ras_20m = 'out_value_cores_selected_ras_20m_' + region
 
 # export paths
 
-export_gpkg_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/GIS/" + region + "/grassout.gpkg"
-export_raster_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/GIS/" + region + "/grassout_ras/"
+export_gpkg_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/Konnektivitet_Norrbotten/Analys/Output/" + region + "/grassout.gpkg"
+export_raster_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/Konnektivitet_Norrbotten/Analys/Output/" + region + "/grassout_ras/"
 export_circuitscape_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/Circutiscape/input/" + region + "/"
-export_csv_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/f3/Konnektivitet/Calculations/output/" + region + "/"
+export_csv_path = "/home/oskeng/Dropbox/Jobb/MIUN/Projekt/Konnektivitet_Norrbotten/Analys/Output/csv/" + region + "/"
 
 
 # def main():
@@ -212,31 +216,6 @@ def datasets():
     Module("r.mask", flags="r")
 
     ###
-    # minorMessage("...clipping rasters to buffer...")
-    ###
-    # Module("g.region", vector=study_area_buffer, res=10)
-    # Module("r.mask", vector=study_area_buffer)
-    #
-    # Module("r.mapcalc",
-    #       expression = nmd_gen_buffer + " = " + nmd_gen_sv, overwrite=True)
-
-    # Setting null to zero and clipping to buffer
-    #
-    # for raster in zero_to_null:
-    #     Module("r.mapcalc",
-    #            expression=raster + "_buffer = if(isnull(" + raster + "_sv),0," + raster + "_sv)", overwrite=True)
-    #
-    #     Module("r.mapcalc",
-    #        expression=raster + "_buffer = " + raster + "_buffer", overwrite=True)
-    #
-    # # Creating 20 m land use data for buffer
-    #
-    # Module("g.region", vector=study_area_buffer, res=20)
-    # Module("r.resample", input = nmd_gen_buffer, output = nmd_gen_buffer_20m, overwrite=True)
-    #
-    # Module("r.mask", flags="r")
-
-    ###
     minorMessage("...selecting value cores...")
     ###
 
@@ -278,8 +257,8 @@ def focal_points():
     majorMessage("CREATING FOCAL POINTS...")
 
     create_focal_points()
-    create_focal_points_rasters()
-    save_focal_points()
+    # create_focal_points_rasters()
+    # save_focal_points()
 
     majorMessage("...DONE, FOCAL POINTS CREATED")
 
@@ -288,46 +267,133 @@ def create_focal_points():
     start_time = time.time()
     Module("g.region", raster=nmd_gen)
 
+    # 1. Create mask: input_value_cores
+
+    Module("r.mask", vector=value_cores)
+
+    # 2. Calculate statistics for nmd_gen, height_tree, height_bush, cover_tree, cover_bush
+    # 3. Save median value + std value as local variables + as csv for all maps
+
+    maps = [nmd_gen, height_tree, height_bush, cover_tree, cover_bush]
+    median_values = []
+    std_values = []
+    std_low_values = []
+    std_high_values = []
+
+    for map in maps:
+        ret = Module('r.univar', flags='ge', stdout_=PIPE, map=map, quiet=True)
+        stats = gscript.parse_key_val(ret.outputs.stdout)
+
+        median = stats["median"]
+        std = stats["stddev"]
+        std_low = int(median) - int(float(std))
+        std_high = int(median) + int(float(std))
+
+        median_values.append(median)
+        std_values.append(std)
+        std_low_values.append(std_low)
+        std_high_values.append(std_high)
+
+    # list of name, degree, score
+    nme = ["NMD", "height_tree", "height_bush", "cover_tree", "cover_bush"]
+
+    # dictionary of lists
+    dict = {'map': nme, 'median': median_values, 'std': std_values, 'std_low': std_low_values, 'std_high': std_high_values}
+
+    df = pd.DataFrame(dict)
+
+    # saving the dataframe
+    df.to_csv(export_csv_path + 'value_core_stats.csv')
+
+
+    # 5. Check statistics...
+
+    # 6. Identify cells with "perfect" values. Checking also outside of value cores since they are not perfect...
+
+    # Module("r.mask", flags="r")
+
+    potfp_perf_ras = "calc_perfect_potential_focal_points_ras"
+
+    Module("r.mapcalc", expression=potfp_perf_ras +
+                      "= if((" + nmd_gen + ">= 111 & " + nmd_gen + "<= 127) & " + nmd_gen + "!= 118" +
+                      ",if(" + maps[1] + "== " + "int(" + median_values[1] + ")" +
+                      ",if(" + maps[2] + "== " + "int(" + median_values[2] + ")" +
+                      ",if(" + maps[3] + "== " + "int(" + median_values[3] + ")" +
+                      ",if(" + maps[4] + "== " + "int(" + median_values[4] + ")" +
+                      ",1)))))", overwrite=True)
+
+    # 7. Identify cells with "almost perfect" values - Not necessary
+
+    # potfp_ras = "calc_potential_focal_points_ras"
+    # Module("r.mapcalc",
+    #        expression=potfp_ras +
+    #            "= if((" + nmd_gen + ">= 111 & " + nmd_gen + "<= 127) & " + nmd_gen + "!= 118" +
+    #            ",if(" + maps[1] + "> " + std_low_values[1] + " &" + maps[1] + "< " + std_high_values[1] +
+    #            ",if(" + maps[2] + "> " + std_low_values[2] + " &" + maps[2] + "< " + std_high_values[2] +
+    #            ",if(" + maps[3] + "> " + std_low_values[3] + " &" + maps[3] + "< " + std_high_values[3] +
+    #            ",1))))", overwrite=True)
+
+    # 8. Randomly select a given number of cells to be used as focal points
+
+    # Module("r.mask", raster=potfp_perf_ras, maskcats="1")
+
+    Module("r.random.cells",
+            output=focal_points_ras,
+            distance="10000",
+            ncells="200",
+            seed="100",  # If omitted, output will differ every time. If set, output will always be the same,
+            overwrite=True)
+
+    Module("r.mask", flags="r")
+
+    # And save as points to make them easier to assess
+
+    Module("r.to.vect",
+            input=focal_points_ras,
+            output=focal_points_vect,
+            type="point",
+            overwrite=True)
+
     minorMessage("...extracting core_areas...")
 
-    Module("v.extract",
-           input=value_cores_study_area,
-           where="AREA_HA >=" + size_value_cores,
-           output=out_value_cores_selected,
-           overwrite=True)
-
-    # Det finns ev. flera areor med samma cat, varav dubletterna har area noll. Detta resulterar isf i multipla centroider inom samma area. Inte aktuellt i detta fallet men kanske behövs i andra områden
+    # Module("v.extract",
+    #        input=value_cores_study_area,
+    #        where="AREA_HA >=" + size_value_cores,
+    #        output=out_value_cores_selected,
+    #        overwrite=True)
     #
-    # gscript.core.info("\n ---> resolving potential duplicates...\n \n")
+    # # Det finns ev. flera areor med samma cat, varav dubletterna har area noll. Detta resulterar isf i multipla centroider inom samma area. Inte aktuellt i detta fallet men kanske behövs i andra områden
+    # #
+    # # gscript.core.info("\n ---> resolving potential duplicates...\n \n")
+    # #
+    # # Module("v.dissolve",
+    # #     input=out_value_cores_selected,
+    # #     column="cat",
+    # #     output=out_value_cores_selected,
+    # #     overwrite=True)
     #
-    # Module("v.dissolve",
-    #     input=out_value_cores_selected,
-    #     column="cat",
-    #     output=out_value_cores_selected,
-    #     overwrite=True)
-
-    minorMessage("...calculating LU statistics for selected value cores...")
-
-    Module("v.rast.stats",
-           map=out_value_cores_selected,
-           raster=nmd_gen,
-           column_prefix="LU",
-           method="median",
-           flags="c")
-
-    minorMessage("...exporting statistics...")
-
-    gscript.run_command("v.db.select",
-                        map=out_value_cores_selected,
-                        file=export_csv_path + "value_cores.csv",
-                        columns="SKYDDSTYP as skyddstyp, sum(AREA_HA) as sum_area, count(cat) as count, LU_median as LC",
-                        group="LU_median,SKYDDSTYP",
-                        overwrite=True)
-
-    minorMessage("...saving selected value cores to gpkg...")
-
-    gscript.run_command("v.out.ogr", input=out_value_cores_selected, output=export_gpkg_path, format="GPKG",
-                        output_layer=out_value_cores_selected, flags='u', overwrite=True)
+    # minorMessage("...calculating LU statistics for selected value cores...")
+    #
+    # Module("v.rast.stats",
+    #        map=out_value_cores_selected,
+    #        raster=nmd_gen,
+    #        column_prefix="LU",
+    #        method="median",
+    #        flags="c")
+    #
+    # minorMessage("...exporting statistics...")
+    #
+    # gscript.run_command("v.db.select",
+    #                     map=out_value_cores_selected,
+    #                     file=export_csv_path + "value_cores.csv",
+    #                     columns="SKYDDSTYP as skyddstyp, sum(AREA_HA) as sum_area, count(cat) as count, LU_median as LC",
+    #                     group="LU_median,SKYDDSTYP",
+    #                     overwrite=True)
+    #
+    # minorMessage("...saving selected value cores to gpkg...")
+    #
+    # gscript.run_command("v.out.ogr", input=out_value_cores_selected, output=export_gpkg_path, format="GPKG",
+    #                     output_layer=out_value_cores_selected, flags='u', overwrite=True)
 
 
 def create_focal_points_rasters():
