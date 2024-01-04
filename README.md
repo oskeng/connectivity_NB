@@ -6,4 +6,4 @@ Runs from within GRASS GIS.
 Author: Oskar Englund (oskeng)
 Email: oskar.englund@miun.se
 
-Instructions are available in a word file for each script.
+See Documentation for instructions
